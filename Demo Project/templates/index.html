@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iamneo Excel Report Generator</title>
+    <style>
+        /* ============================================
+           RESET & BASE STYLES
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0B1E3F 0%, #1E3C72 50%, #0B1E3F 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* ============================================
+           CONTAINER & CARD
+           ============================================ */
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                        0 0 0 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            animation: fadeInUp 0.6s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container:hover {
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4),
+                        0 0 0 1px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+
+        /* ============================================
+           TITLE
+           ============================================ */
+        h1 {
+            color: #FFFFFF;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .title-icon {
+            width: 40px;
+            height: 40px;
+            fill: #00C6FF;
+        }
+
+        /* ============================================
+           UPLOAD BOX
+           ============================================ */
+        .upload-box {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 48px 32px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+            margin-bottom: 32px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-box:hover::before {
+            left: 100%;
+        }
+
+        .upload-box:hover {
+            border-color: rgba(0, 198, 255, 0.6);
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 198, 255, 0.2);
+        }
+
+        .upload-box.dragover {
+            border-color: #00C6FF;
+            background: rgba(0, 198, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            fill: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+        }
+
+        .upload-box:hover .upload-icon {
+            fill: #00C6FF;
+            transform: scale(1.1);
+        }
+
+        .upload-text {
+            color: #FFFFFF;
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-name {
+            color: #00C6FF;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            word-break: break-all;
+            padding: 12px;
+            background: rgba(0, 198, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 198, 255, 0.3);
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 18px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: none;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-participation {
+            background: linear-gradient(135deg, #1E3C72 0%, #0B1E3F 100%);
+            color: #FFFFFF;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-participation:hover {
+            background: linear-gradient(135deg, #0B1E3F 0%, #1E3C72 100%);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-performance {
+            background: linear-gradient(135deg, #00C6FF 0%, #0077BE 100%);
+            color: #FFFFFF;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-performance:hover {
+            background: linear-gradient(135deg, #0077BE 0%, #00C6FF 100%);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Weekly button styles removed (Parul Weekly report no longer used) */
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* ============================================
+           LOADING SPINNER
+           ============================================ */
+        .loading {
+            display: none;
+            text-align: center;
+            color: #FFFFFF;
+            margin-top: 24px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top: 3px solid #00C6FF;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ============================================
+           ALERTS
+           ============================================ */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-error {
+            background: rgba(244, 67, 54, 0.15);
+            border-color: rgba(244, 67, 54, 0.5);
+            color: #FFCDD2;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(76, 175, 80, 0.15);
+            border-color: rgba(76, 175, 80, 0.5);
+            color: #C8E6C9;
+            font-weight: 500;
+        }
+
+        /* ============================================
+           TOAST NOTIFICATION
+           ============================================ */
+        #toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: #FFFFFF;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #toast.success-participation {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border-left: 4px solid #2E7D32;
+        }
+
+        #toast.success-performance {
+            background: linear-gradient(135deg, #00C6FF 0%, #0077BE 100%);
+            border-left: 4px solid #005A8B;
+        }
+
+        /* Parul Weekly toast style removed (no longer used) */
+
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .container {
+                padding: 32px 24px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .btn {
+                padding: 16px 24px;
+                font-size: 1rem;
+            }
+
+            #toast {
+                right: 16px;
+                left: 16px;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <h1>
+            <svg class="title-icon" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+            </svg>
+            Excel Report Generator
+        </h1>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <strong>{{ category|upper }}:</strong> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Upload Form -->
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            <input type="hidden" id="actionInput" name="action" value="">
+            
+            <!-- Upload Box -->
+            <div class="upload-box" id="uploadBox">
+                <svg class="upload-icon" viewBox="0 0 24 24">
+                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                </svg>
+                <div class="upload-text">Click to upload or drag and drop</div>
+                <div class="upload-hint">CSV or Excel files (.csv, .xlsx, .xls)</div>
+                <input type="file" id="fileInput" name="file" accept=".csv,.xlsx,.xls" required>
+                <div class="file-name" id="fileName"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="button-group">
+                <button type="button" class="btn btn-participation" id="btnParticipation" disabled>
+                    <svg class="btn-icon" viewBox="0 0 24 24">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                    </svg>
+                    Generate Participation Report
+                </button>
+                <button type="button" class="btn btn-performance" id="btnPerformance" disabled>
+                    <svg class="btn-icon" viewBox="0 0 24 24">
+                        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                    </svg>
+                    Generate Performance Report
+                </button>
+                <!-- Parul Weekly Report button removed -->
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Processing your file...</div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const btnParticipation = document.getElementById('btnParticipation');
+        const btnPerformance = document.getElementById('btnPerformance');
+        const uploadForm = document.getElementById('uploadForm');
+        const loading = document.getElementById('loading');
+        const actionInput = document.getElementById('actionInput');
+        const toast = document.getElementById('toast');
+        const actionButtons = [btnParticipation, btnPerformance];
+
+        // ============================================
+        // TOAST NOTIFICATION FUNCTION
+        // ============================================
+        function showToast(message, type) {
+            toast.textContent = message;
+            toast.className = `show ${type}`;
+            
+            // Add icon
+            const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            icon.setAttribute('class', 'toast-icon');
+            icon.setAttribute('viewBox', '0 0 24 24');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z');
+            icon.appendChild(path);
+            toast.insertBefore(icon, toast.firstChild);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.innerHTML = '';
+                }, 400);
+            }, 4000);
+        }
+
+        // ============================================
+        // FILE UPLOAD HANDLERS
+        // ============================================
+        uploadBox.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const validExtensions = ['.csv', '.xlsx', '.xls'];
+                const fileExt = '.' + file.name.toLowerCase().split('.').pop();
+                if (!validExtensions.includes(fileExt)) {
+                    showToast('Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)', 'success-performance');
+                    fileInput.value = '';
+                    return;
+                }
+                fileName.textContent = file.name;
+                actionButtons.forEach(btn => btn.disabled = false);
+            }
+        });
+
+        // ============================================
+        // DRAG AND DROP HANDLERS
+        // ============================================
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                const validExtensions = ['.csv', '.xlsx', '.xls'];
+                const fileExt = '.' + file.name.toLowerCase().split('.').pop();
+                if (!validExtensions.includes(fileExt)) {
+                    showToast('Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)', 'success-performance');
+                    return;
+                }
+                fileInput.files = e.dataTransfer.files;
+                fileName.textContent = file.name;
+                actionButtons.forEach(btn => btn.disabled = false);
+            }
+        });
+
+        // ============================================
+        // FORM SUBMISSION HANDLERS
+        // ============================================
+        let currentAction = '';
+
+        btnParticipation.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!fileInput.files.length) {
+                showToast('Please select a file first', 'success-performance');
+                return;
+            }
+            currentAction = 'participation';
+            actionInput.value = 'participation';
+            loading.style.display = 'block';
+            actionButtons.forEach(btn => btn.disabled = true);
+            uploadForm.submit();
+            
+            // Monitor for download completion
+            monitorDownload('participation');
+        });
+
+        btnPerformance.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!fileInput.files.length) {
+                showToast('Please select a file first', 'success-performance');
+                return;
+            }
+            currentAction = 'performance';
+            actionInput.value = 'performance';
+            loading.style.display = 'block';
+            actionButtons.forEach(btn => btn.disabled = true);
+            uploadForm.submit();
+            
+            // Monitor for download completion
+            monitorDownload('performance');
+        });
+
+        // Parul Weekly button handler removed (feature no longer used)
+
+        // ============================================
+        // DOWNLOAD MONITORING
+        // ============================================
+        function monitorDownload(action) {
+            // Hide loading after a delay (file should be downloading)
+            setTimeout(() => {
+                loading.style.display = 'none';
+                
+                // Show success toast
+            if (action === 'participation') {
+                showToast('Participation Report Generated Successfully!', 'success-participation');
+            } else if (action === 'performance') {
+                showToast('Performance Report Generated Successfully!', 'success-performance');
+            }
+            
+            // Re-enable buttons
+            actionButtons.forEach(btn => btn.disabled = false);
+            }, 2000);
+        }
+
+        // ============================================
+        // PAGE VISIBILITY API (for download detection)
+        // ============================================
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && loading.style.display === 'block') {
+                // Page became visible again, likely after download
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                if (currentAction === 'participation') {
+                    showToast('Participation Report Generated Successfully!', 'success-participation');
+                } else if (currentAction === 'performance') {
+                    showToast('Performance Report Generated Successfully!', 'success-performance');
+                }
+                actionButtons.forEach(btn => btn.disabled = false);
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
